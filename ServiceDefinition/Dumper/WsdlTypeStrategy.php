@@ -12,15 +12,14 @@ namespace BeSimple\SoapBundle\ServiceDefinition\Dumper;
 
 use BeSimple\SoapBundle\ServiceDefinition\ServiceDefinition;
 use BeSimple\SoapBundle\ServiceDefinition\Loader\AnnotationComplexTypeLoader;
-use BeSimple\SoapBundle\ServiceDefinition\Strategy\ComplexType;
+use BeSimple\SoapBundle\ServiceDefinition\Strategy;
 use BeSimple\SoapBundle\Util\String;
 
 use Zend\Soap\Exception;
 use Zend\Soap\Wsdl as BaseWsdl;
-use Zend\Soap\Wsdl\Strategy;
-use Zend\Soap\Wsdl\Strategy\ArrayOfTypeSequence;
+use Zend\Soap\Wsdl\Strategy as BaseStrategy;
 
-class WsdlTypeStrategy implements Strategy
+class WsdlTypeStrategy implements BaseStrategy
 {
     /**
      * Context WSDL file
@@ -68,7 +67,11 @@ class WsdlTypeStrategy implements Strategy
             throw new \LogicException(sprintf('Cannot add complex type "%s", no context is set for this composite strategy.', $type));
         }
 
-        $strategy = String::endsWith($type, '[]') ? $this->getArrayStrategy() : $this->getTypeStrategy();
+        if ($this->getArrayStrategy()->support($type)) {
+            $strategy = $this->getArrayStrategy();
+        } else {
+            $strategy = $this->getTypeStrategy();
+        }
 
         return $strategy->addComplexType($type);
     }
@@ -76,7 +79,7 @@ class WsdlTypeStrategy implements Strategy
     private function getArrayStrategy()
     {
         if (!$this->arrayStrategy) {
-            $this->arrayStrategy = new ArrayOfTypeSequence();
+            $this->arrayStrategy = new Strategy\ArrayOfType();
             $this->arrayStrategy->setContext($this->context);
         }
 
@@ -86,7 +89,7 @@ class WsdlTypeStrategy implements Strategy
     private function getTypeStrategy()
     {
         if (!$this->typeStrategy) {
-            $this->typeStrategy = new ComplexType($this->loader, $this->definition);
+            $this->typeStrategy = new Strategy\ComplexType($this->loader, $this->definition);
             $this->typeStrategy->setContext($this->context);
         }
 
