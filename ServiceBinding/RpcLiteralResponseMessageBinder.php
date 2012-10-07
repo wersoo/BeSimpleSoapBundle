@@ -39,18 +39,15 @@ class RpcLiteralResponseMessageBinder implements MessageBinderInterface
 
         if (preg_match('/^([^\[]+)\[\]$/', $phpType, $match)) {
             $isArray = true;
+            $message = (array) $message;
             $phpType = $match[1];
         }
 
         if (isset($this->definitionComplexTypes[$phpType])) {
             if ($isArray) {
-                $array = array();
-
-                foreach ($message as $complexType) {
-                    $array[] = $this->checkComplexType($phpType, $complexType);
+                foreach ($message as &$complexType) {
+                    $complexType = $this->checkComplexType($phpType, $complexType);
                 }
-
-                $message = $array;
             } else {
                 $message = $this->checkComplexType($phpType, $message);
             }
@@ -74,17 +71,32 @@ class RpcLiteralResponseMessageBinder implements MessageBinderInterface
 
         $r = new \ReflectionClass($message);
         foreach ($this->definitionComplexTypes[$phpType] as $type) {
+
             $p = $r->getProperty($type->getName());
             // hasMethod() and getMethod() are case insensitive
             $getterMethod = $r->hasMethod('get' . $type->getName()) ? $r->getMethod('get' . $type->getName()) : null;
+            $getterIdMethod = $r->hasMethod('get' . $type->getName() . 'Id') ? $r->getMethod('get' . $type->getName() . 'Id') : null;
             $setterMethod = $r->hasMethod('set' . $type->getName()) ? $r->getMethod('set' . $type->getName()) : null;
-            if ($p->isPublic()) {
-                $value = $p->getValue($message);
-            } elseif ($getterMethod) {
-                $value = $getterMethod->invoke($message);
+
+            if ($type->isByRef()) {
+
+                if ($getterIdMethod) {
+                    $getterIdMethod->setAccessible(true);
+                    $value = $getterIdMethod->invoke($message);
+                } else {
+                    throw new \InvalidArgumentException(sprintf('`%s` is marked ByRef and must have `get%sId()` method', $type->getName(), $type->getName()));
+                }
+
             } else {
-                $p->setAccessible(true);
-                $value = $p->getValue($message);
+
+                if ($p->isPublic()) {
+                    $value = $p->getValue($message);
+                } elseif ($getterMethod) {
+                    $value = $getterMethod->invoke($message);
+                } else {
+                    $p->setAccessible(true);
+                    $value = $p->getValue($message);
+                }
             }
 
             if (null !== $value) {

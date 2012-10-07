@@ -18,6 +18,7 @@ class ComplexType
     private $name;
     private $value;
     private $isNillable = false;
+    private $byRef = false;
 
     public function getName()
     {
@@ -47,5 +48,15 @@ class ComplexType
     public function setNillable($isNillable)
     {
         $this->isNillable = (bool) $isNillable;
+    }
+
+    public function isByRef()
+    {
+        return !! $this->byRef;
+    }
+
+    public function setByRef($byRef)
+    {
+        $this->byRef = $byRef;
     }
 }

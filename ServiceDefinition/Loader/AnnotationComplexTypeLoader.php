@@ -50,6 +50,7 @@ class AnnotationComplexTypeLoader extends AnnotationClassLoader
                 $propertyComplexType = new ComplexType();
                 $propertyComplexType->setValue($complexType->getValue());
                 $propertyComplexType->setNillable($complexType->isNillable());
+                $propertyComplexType->setByRef($complexType->isByRef());
                 $propertyComplexType->setName($property->getName());
                 $collection->add($propertyComplexType);
             }

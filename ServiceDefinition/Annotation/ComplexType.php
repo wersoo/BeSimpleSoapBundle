@@ -18,6 +18,7 @@ class ComplexType extends Configuration
     private $name;
     private $value;
     private $isNillable = false;
+    private $byRef = false;
 
     public function getName()
     {
@@ -48,6 +49,17 @@ class ComplexType extends Configuration
     {
         $this->isNillable = (bool) $isNillable;
     }
+
+    public function isByRef()
+    {
+        return !! $this->byRef;
+    }
+
+    public function setByRef($byRef)
+    {
+        $this->byRef = $byRef;
+    }
+
 
     public function getAliasName()
     {
